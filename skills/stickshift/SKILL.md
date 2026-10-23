@@ -98,6 +98,13 @@ why did narrowing the type fix that?" If they answer, record their words with
 `Status: confirmed`. If they skip it, write the note yourself with `Status: unconfirmed` and move
 on. Never ask twice in a row; never block on it.
 
+**Wrapping up.** When the user signals they're leaving ("that's it for today", "gotta go", "done
+for now"), not just finishing a piece of work, write a short journal entry yourself without asking,
+so the next session can pick up where this one stopped. Then reply in two or three lines: a goodbye,
+the next step, and a one-line offer of the full recap with teach-backs (`/stickshift:recap`). Don't
+run the recap unless they ask. A quiz offer from the session-start context is the same: one line,
+once per session, never a gate.
+
 **Evidence for "known".** Promote a concept in the profile only after a correct quiz answer or
 writing it correctly without hints. Never on your own explanation.
 
@@ -113,8 +120,9 @@ follow it. The plugin root is in the session context; it's two folders above thi
 `skills/`.
 
 - `$ARGUMENTS` is whatever they wrote after the command name.
-- A line like `` !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/init.sh` `` means: run that script yourself
-  from the project directory, with the plugin root in place of the variable, and use its output.
+- A line that is an exclamation mark followed by a command in backticks (start.md's setup line
+  is one) means: run that script yourself from the project directory, with the plugin root in
+  place of the variable, and use its output.
 - Run `pause.sh` or `reset.sh` only when the user asked for that command in their own message.
 - The scripts write to `~/.claude/stickshift/` and `.git/info/exclude`, so Codex may ask the user
   to approve them.

@@ -6,6 +6,7 @@
 
 input=$(cat)
 cwd=$(jq -r '.cwd // empty' <<<"$input")
+source=$(jq -r '.source // empty' <<<"$input")
 [ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
 root=$(ss_root "$cwd")
 state="$root/.stickshift"
@@ -45,6 +46,25 @@ ctx=$(
   open=$(grep -c '^- \[ \]' "$state/questions.md" 2>/dev/null)
   echo "Unconfirmed concepts: ${unconfirmed:-0}. Open questions: ${open:-0}."
   echo "Read .stickshift/decisions.md, concepts.md and questions.md when they're relevant."
+
+  # Offer a quiz when one is due. Not after compaction: that's the same session.
+  if [ "$source" != compact ]; then
+    total=$(grep -c '^- Status: [a-z]*$' "$state/concepts.md" 2>/dev/null)
+    last=$(grep 'Quiz record:' "$state/concepts.md" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort | tail -n 1)
+    cutoff=$(date -v-3d +%F 2>/dev/null || date -d '3 days ago' +%F)
+    due=""
+    if [ "${unconfirmed:-0}" -ge 3 ]; then
+      due="${unconfirmed} concepts are unconfirmed"
+    elif [ -n "$last" ] && [ "${total:-0}" -ge 1 ] && [[ "$last" < "$cutoff" ]]; then
+      due="the last quiz was on $last"
+    elif [ -z "$last" ] && [ "${total:-0}" -ge 3 ]; then
+      due="there are ${total} concepts and no quiz yet"
+    fi
+    if [ -n "$due" ]; then
+      echo
+      echo "A quiz is due ($due). In your first reply, after answering what they asked, offer once in one line: a quick 3-question quiz (/stickshift:quiz 3). If they decline or ignore it, don't offer again this session."
+    fi
+  fi
 )
 
 jq -n --arg c "$ctx" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $c}}'
