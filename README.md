@@ -165,6 +165,11 @@ like `.gitignore` but stays on your machine.
   commands to run them for you. Switching modes relies on it doing that only when you ask.
 - Codex support hasn't been tried on a real Codex install yet.
 
+## Development
+
+`bash tests/run.sh` tests the hooks and scripts (needs `git` and `jq`). CI runs it on Linux and
+macOS, and validates the plugin with `claude plugin validate`.
+
 ## License
 
 MIT
