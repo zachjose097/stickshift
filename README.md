@@ -2,18 +2,18 @@
 
 > Vibe coding is autopilot. Stickshift puts you back in the driver's seat.
 
-A Claude Code plugin for learning while you build. **You write the code.** The AI researches
-options, asks questions, gives hints one step at a time, reviews your work, quizzes you, and keeps
-your decisions and lessons in local notes that carry over between sessions.
+A plugin for Claude Code and Codex for learning while you build. **You write the code.** The AI
+researches options, asks questions, gives hints one step at a time, reviews your work, quizzes you,
+and keeps your decisions and lessons in local notes that carry over between sessions.
 
 See [DESIGN.md](DESIGN.md) for the reasoning behind each decision.
 
 ## Install
 
-Requirements: Claude Code, `bash`, `git` and `jq` (built into macOS 15+; elsewhere install with
-your package manager).
+Requirements: Claude Code or Codex, `bash`, `git` and `jq` (built into macOS 15+; elsewhere
+install with your package manager).
 
-In Claude Code:
+### Claude Code
 
 ```
 /plugin marketplace add /path/to/stickshift
@@ -25,6 +25,23 @@ Restart Claude Code, then in a project:
 ```
 /stickshift:start
 ```
+
+### Codex
+
+```
+codex plugin marketplace add /path/to/stickshift
+codex plugin add stickshift@stickshift
+```
+
+Start Codex and run `/hooks` to review and trust Stickshift's hooks. Codex doesn't run a plugin's
+hooks until you do, and without them there's no edit lock. Then, in a project, ask:
+
+```
+stickshift start
+```
+
+Codex has no plugin slash commands, so ask for the commands below by name instead: `stickshift
+quiz`, `stickshift audit security`. Unlocking works the same in both.
 
 ## How it works
 
@@ -80,7 +97,10 @@ like `.gitignore` but stays on your machine.
 - The edit lock blocks the AI's file-editing tools completely. Shell writes (`>`, `tee`, `sed -i`,
   `patch`, `git apply`) are caught by pattern; a determined workaround such as a script that writes
   files could slip past. It's a guardrail, not a sandbox.
-- Notes are read into the AI's context, so your Claude Code data settings apply to them.
+- Notes are read into the AI's context, so your Claude Code or Codex data settings apply to them.
+- In Codex, the AI runs the start, pause and reset scripts itself, because there are no slash
+  commands to run them for you. Switching modes relies on it doing that only when you ask.
+- Codex support hasn't been tried on a real Codex install yet.
 
 ## License
 

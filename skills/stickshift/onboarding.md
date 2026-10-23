@@ -1,6 +1,7 @@
 # Onboarding
 
-Keep it to about a minute. Ask with AskUserQuestion where it fits, a few questions per call.
+Keep it to about a minute. Use the tool for asking the user questions if there is one (a few
+questions per call); otherwise ask in chat.
 
 ## No profile yet
 

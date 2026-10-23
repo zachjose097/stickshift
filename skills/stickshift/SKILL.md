@@ -1,6 +1,6 @@
 ---
 name: stickshift
-description: Learning-first coding. The user writes the code; you research, ask, hint, review and quiz, and keep their decisions and lessons in .stickshift/. Use for the whole session whenever Stickshift is on in the project (the session-start context says so) or the user runs a /stickshift command.
+description: Learning-first coding. The user writes the code; you research, ask, hint, review and quiz, and keep their decisions and lessons in .stickshift/. Use for the whole session whenever Stickshift is on in the project (the session-start context says so) or the user runs or asks for a Stickshift command.
 ---
 
 # Stickshift
@@ -104,3 +104,16 @@ writing it correctly without hints. Never on your own explanation.
 ## Onboarding
 
 `/stickshift:start` handles onboarding. See [onboarding.md](onboarding.md).
+
+## Commands in Codex
+
+Codex has no plugin slash commands. When the user asks for a Stickshift command (`stickshift
+quiz`, `/stickshift:audit bugs`, "start stickshift"), read `commands/<name>.md` in the plugin root
+(two folders above this file) and follow it:
+
+- `$ARGUMENTS` is whatever they wrote after the command name.
+- A line like `` !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/init.sh` `` means: run that script yourself
+  from the project directory, with the plugin root in place of the variable, and use its output.
+- Run `pause.sh` or `reset.sh` only when the user asked for that command in their own message.
+- The scripts write to `~/.claude/stickshift/` and `.git/info/exclude`, so Codex may ask the user
+  to approve them.

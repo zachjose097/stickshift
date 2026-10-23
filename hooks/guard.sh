@@ -46,14 +46,42 @@ check_path() {
   deny "Stickshift manual mode: the user writes the project code, so you can't edit $rel. Help through the hint ladder instead (question, concept, pseudocode, unrelated example). If the user wants you to write it, they can start their next message with: unlock $rel"
 }
 
+# Check every file a Codex patch ($1) adds, updates, deletes or moves to.
+check_patch() {
+  local paths p
+  paths=$(sed -nE 's/^\*\*\* (Add File|Update File|Delete File|Move to): *(.*[^[:space:]])[[:space:]]*$/\2/p' <<<"$1")
+  while IFS= read -r p; do
+    [ -n "$p" ] && check_path "$p"
+  done <<<"$paths"
+}
+
 case "$tool" in
   Write | Edit | MultiEdit | NotebookEdit)
     path=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<<"$input")
     [ -n "$path" ] && check_path "$path"
     ;;
+  apply_patch)
+    # Codex sends file edits as one patch in tool_input.command.
+    check_patch "$(jq -r '.tool_input.command // empty' <<<"$input")"
+    ;;
   Bash)
     cmd=$(jq -r '.tool_input.command // empty' <<<"$input")
-    case "$cmd" in *.stickshift/.hook*) deny "$HOOK_MSG" ;; esac
+    case "$cmd" in
+      *.stickshift/.hook*)
+        # Plain one-line reads are fine (Codex reads files through the shell); anything else could write there.
+        case "$cmd" in *$'\n'*) deny "$HOOK_MSG" ;; esac
+        grep -Eq '^[[:space:]]*(cat|head|tail|grep|wc|ls)[[:space:]][^;&|<>`$()]*$' <<<"$cmd" || deny "$HOOK_MSG"
+        ;;
+    esac
+
+    # Codex can also run apply_patch from the shell with the patch in a heredoc.
+    # Check its files, then drop the patch body so its lines don't look like redirects.
+    case "$cmd" in
+      *'*** Begin Patch'*)
+        check_patch "$cmd"
+        cmd=$(sed '/^\*\*\* Begin Patch/,/^\*\*\* End Patch/d' <<<"$cmd")
+        ;;
+    esac
     [ "$mode" = manual ] || exit 0
 
     # In-place editors are allowed only on notes.
