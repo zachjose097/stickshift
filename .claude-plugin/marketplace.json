@@ -1,0 +1,14 @@
+{
+  "name": "stickshift",
+  "owner": { "name": "Zach" },
+  "metadata": {
+    "description": "Stickshift: you write the code, the AI teaches."
+  },
+  "plugins": [
+    {
+      "name": "stickshift",
+      "source": "./",
+      "description": "Learn while you build. You write the code; the AI researches, hints, reviews and quizzes."
+    }
+  ]
+}
