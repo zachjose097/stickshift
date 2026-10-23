@@ -154,7 +154,9 @@ isn't an unlock, so the behaviour doesn't fade in long sessions.
 `/stickshift:start` on first use:
 
 1. Asks which languages you use and your level in each, your goals, how deep you want
-   explanations, and hint strictness. About a minute.
+   explanations, and hint strictness. About a minute. Free-text answers are asked in chat;
+   fixed choices use the question tool. With no stack files, it also asks what the project will
+   be written in.
 2. Creates `.stickshift/` and adds it to `.git/info/exclude`.
 3. Detects the stack (`package.json`, `tsconfig.json`, `pyproject.toml`, `Cargo.toml`, ...).
 
@@ -173,6 +175,12 @@ Example: TypeScript set to "basic" means more explanation of types, narrowing an
 Questions on concepts you got wrong, or that are still `unconfirmed`, come up more often. Correct
 answers promote concepts to "known" in the profile. Concepts can be exported to the `flashcards`
 skill for Anki.
+
+Quiz and recap are offered, never forced, at most once per session each. At session start, the
+hook asks the model to offer a short quiz when one is due: three or more `unconfirmed` concepts,
+a last quiz more than three days old, or three or more concepts and no quiz yet. The last quiz
+date comes from the quiz records in `concepts.md`. When you signal you're done for the day, the
+model offers a recap so the journal stays current for the next session.
 
 ### 4.8 Audit
 
