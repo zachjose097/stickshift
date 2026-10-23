@@ -41,7 +41,7 @@ Stickshift flips the roles:
 |---|---|---|---|
 | 1 | Name | `stickshift` | Driving manual versus autopilot. Distinctive and searchable. |
 | 2 | Packaging | Claude Code **plugin** (skill, commands, hooks) | A skill alone can only ask. Hooks can enforce the edit lock and reload memory. |
-| 3 | Code edits | **Locked by default, unlocked per request and per file** | Keeps you writing the code, without blocking boring work (config, fixtures). |
+| 3 | Code edits | **Locked by default; unlocked per request and per file, or delegated per feature** | Keeps you writing the code, without blocking boring work (config, fixtures). |
 | 4 | Learning friction | Optional one-line teach-back. Skipped notes are saved as `unconfirmed` and come back in quizzes | Learning happens without slowing you down enough to quit. |
 | 5 | Language level | Asked at onboarding and on first use of a new language, then tracked per concept | Lets you start a TypeScript project knowing little TypeScript. |
 | 6 | Global profile | `~/.claude/stickshift/profile.md`, outside every repo | Carries what you know across projects and can't be committed. |
@@ -76,6 +76,18 @@ After unlocked code is written, the AI explains it and asks one question to chec
 Every unlock is logged in the journal. If you unlock four requests in a row, the AI mentions it
 once ("the last 4 changes were mine, want to take the next one?") and leaves the choice to you.
 
+**Delegating.** Typing an unlock for every piece of boilerplate is the friction that makes people
+switch the lock off. So when you plan a feature, the AI proposes a split by file (see 4.3), and
+you hand over the boilerplate for the whole feature:
+
+```
+delegate cli.py tests/fixtures/
+```
+
+The same hook records it in `.stickshift/.hook/delegated`. It lasts until another `delegate` line
+replaces it, `delegate none` clears it, or `/stickshift:start` runs. Session start reminds the AI
+what's delegated. It's still your message that grants it, so only you can hand files over.
+
 The lock only applies in projects where you ran `/stickshift:start`. Other projects are untouched.
 
 **Known gap.** The AI could still write files through `Bash` (`sed -i`, `cat >`, `tee`). The hook
@@ -98,6 +110,10 @@ When you're stuck, the AI climbs one rung at a time and stops as soon as you can
 - **Normal:** moves up when you've clearly tried.
 - **Light:** goes to the useful rung straight away.
 
+Strictness is a baseline that fades with evidence: one step stricter on concepts you've shown you
+know (starting from what you did last time), one step lighter on new ones. The highest rung you
+needed is recorded per concept, so recaps can show it going down.
+
 ### 4.3 Plan → Build → Review
 
 1. **Plan.** You describe your approach first. The AI asks questions, points out gaps and offers
@@ -105,8 +121,12 @@ When you're stuck, the AI climbs one rung at a time and stops as soon as you can
    If you don't know where to start, the AI helps you break the task down: it asks what the
    feature needs to do, suggests a first small step, and points to the concepts involved. You
    still choose the approach.
-2. **Build.** You write the code. The AI answers questions through the hint ladder.
-3. **Review.** `/stickshift:review` reviews your changes like a senior engineer would. It asks
+2. **Split.** The AI proposes who writes what, by file. The feature's logic, anything new to you
+   and anything in your goals is yours. Boilerplate you've shown you can do is its, if you
+   `delegate` it. Anything you claim is yours, and a file holding both stays yours.
+3. **Build.** You write your parts. The AI answers questions through the hint ladder and writes
+   the delegated parts.
+4. **Review.** `/stickshift:review` reviews your changes like a senior engineer would. It asks
    questions before giving verdicts and explains the reasoning behind each comment.
 
 ### 4.4 Research mode
@@ -128,7 +148,7 @@ Explanations use diagrams (data flow, relationships) where a picture helps.
 | `map.md` | Your understanding of the architecture. Quizzes draw on it |
 | `questions.md` | Open questions to come back to |
 | `journal.md` | Short session logs: what you did, what was hard, what's next, any unlocks |
-| `.hook/` | Mode, current unlocks and the unlock log. Written only by the hooks and commands |
+| `.hook/` | Mode, current unlocks and delegations, and their log. Written only by the hooks and commands |
 
 **Teach-back.** After you solve something, the AI asks one optional question, such as *"In one
 sentence, why did narrowing the type fix that?"* If you answer, your words go into `concepts.md`
@@ -173,7 +193,10 @@ Example: TypeScript set to "basic" means more explanation of types, narrowing an
 - "Predict the output of this function for this input."
 
 Questions on concepts you got wrong, or that are still `unconfirmed`, come up more often. Correct
-answers promote concepts to "known" in the profile. Concepts can be exported to the `flashcards`
+answers promote concepts to "known" in the profile. Code the AI wrote for you, through an unlock
+or delegation, gets at least one question, so handing work over doesn't mean never learning it.
+Recaps end with a line of progress over the week: known concepts, quiz score, and hint rungs going
+down. Concepts can be exported to the `flashcards`
 skill for Anki.
 
 Quiz and recap are offered, never forced, at most once per session each. At session start, the
@@ -264,7 +287,7 @@ stickshift/
     hooks.json
     lib.sh                    # shared helpers (project root, path resolution)
     session-start.sh          # load profile + .stickshift/ on startup and after compaction
-    prompt-unlock.sh          # UserPromptSubmit: record "unlock <paths>"; one-line reminder otherwise
+    prompt-unlock.sh          # UserPromptSubmit: record "unlock"/"delegate <paths>"; one-line reminder otherwise
     guard.sh                  # PreToolUse: block edits outside .stickshift/ unless unlocked
   scripts/
     init.sh  pause.sh  reset.sh   # run by the start, pause and reset commands

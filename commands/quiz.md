@@ -13,6 +13,11 @@ profile, and look at the code they relate to.
 Default 5. Weight them:
 
 - Concepts marked `unconfirmed`, or with a recent ✗ in their quiz record, come first.
+- Code the model wrote for them comes next: the unlocks and delegations in `journal.md` and
+  `.stickshift/.hook/unlocks.log` (read it, don't write to it). Ask about at least one piece if
+  there is any: "Explain the `parse_date` I wrote for you on Tuesday" or "What does `cli.py` do
+  if the file argument is missing?" Getting it right doesn't make them known concepts; it shows
+  they understand the code they were given.
 - Mix the types:
   - **Explain:** "What does `parseOrder()` do when `items` is empty?"
   - **Why:** "Why did you pick Zod over hand-written validation?" (check against `decisions.md`)

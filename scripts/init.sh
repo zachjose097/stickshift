@@ -17,6 +17,7 @@ for f in decisions concepts map questions journal; do
   [ -f "$state/$f.md" ] || cp "$templates/$f.md" "$state/$f.md"
 done
 : > "$state/.hook/unlocks"
+: > "$state/.hook/delegated"
 echo manual > "$state/.hook/mode"
 
 # Keep the notes out of git without touching the committed .gitignore.

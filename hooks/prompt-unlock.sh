@@ -1,8 +1,10 @@
 #!/bin/bash
 # UserPromptSubmit hook. Records the paths the user unlocked for this one request,
-# from a first line like "unlock src/config.ts src/env.ts — write the env loader".
-# Only hooks write .stickshift/.hook/, so only the user can unlock. In manual mode,
-# other messages get a one-line reminder of how Stickshift works.
+# from a first line like "unlock src/config.ts src/env.ts — write the env loader",
+# and the paths they delegated for the current feature, from "delegate cli.py table.py"
+# (until the next delegate line, or "delegate none"). Only hooks write .stickshift/.hook/,
+# so only the user can unlock. In manual mode, other messages get a one-line reminder
+# of how Stickshift works.
 
 . "$(dirname "$0")/lib.sh"
 
@@ -23,29 +25,55 @@ hook="$root/.stickshift/.hook"
 : > "$hook/unlocks"
 
 first=$(jq -r '.prompt // empty' <<<"$input" | head -n 1)
-spec=$(printf '%s\n' "$first" | sed -nE 's/^[[:space:]]*[Uu][Nn][Ll][Oo][Cc][Kk][[:space:]]+//p')
-spec=${spec%%—*}
-spec=${spec%% - *}
-spec=${spec%%:*}
 
-list=""
-set -f
-for w in $spec; do
-  w=$(printf '%s' "$w" | tr -d "\"'\`,")
-  [ -n "$w" ] || continue
-  p=$(ss_abs "$w" "$cwd")
-  if [ "$p" = "$root" ]; then
-    rel=.
-  else
-    case "$p" in
-      "$root/"*) rel=${p#"$root/"} ;;
-      *) continue ;;   # Outside the project: never locked.
-    esac
+# The rest of the first line after keyword $1, up to a dash or colon, or nothing.
+spec_after() {
+  local s
+  s=$(printf '%s\n' "$first" | sed -nE "s/^[[:space:]]*$1[[:space:]]+//Ip")
+  s=${s%%—*}
+  s=${s%% - *}
+  printf '%s' "${s%%:*}"
+}
+
+# Print each path in $1 that is inside the project, relative to the root (. for the root).
+project_paths() {
+  local w p
+  set -f
+  for w in $1; do
+    w=$(printf '%s' "$w" | tr -d "\"'\`,")
+    [ -n "$w" ] || continue
+    p=$(ss_abs "$w" "$cwd")
+    if [ "$p" = "$root" ]; then
+      echo .
+    else
+      case "$p" in
+        "$root/"*) echo "${p#"$root/"}" ;;
+      esac   # Outside the project: never locked.
+    fi
+  done
+  set +f
+}
+
+# Comma-separated list of the paths in file $1.
+joined() { paste -sd, "$1" | sed 's/,/, /g'; }
+
+unlocks=$(project_paths "$(spec_after unlock)")
+[ -n "$unlocks" ] && printf '%s\n' "$unlocks" > "$hook/unlocks"
+list=$([ -n "$unlocks" ] && joined "$hook/unlocks")
+
+delegate_spec=$(spec_after delegate)
+delegate_msg=""
+if [ "$(printf '%s' "$delegate_spec" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')" = none ]; then
+  : > "$hook/delegated"
+  delegate_msg="[stickshift] The user took back all delegated paths. Every project file is theirs again."
+elif [ -n "$delegate_spec" ]; then
+  delegated=$(project_paths "$delegate_spec")
+  if [ -n "$delegated" ]; then
+    printf '%s\n' "$delegated" > "$hook/delegated"
+    printf '%s\tdelegate\t%s\n' "$(date '+%Y-%m-%d %H:%M')" "$(joined "$hook/delegated")" >> "$hook/unlocks.log"
+    delegate_msg="[stickshift] The user delegated these paths to you for the current feature: $(joined "$hook/delegated"). You may write them until they send a new delegate line or \"delegate none\". Everything else stays theirs. Note the delegation in today's entry in .stickshift/journal.md."
   fi
-  printf '%s\n' "$rel" >> "$hook/unlocks"
-  list="$list${list:+, }$rel"
-done
-set +f
+fi
 
 # Remember the last five messages (U = unlock, - = other) to notice a run of unlocks.
 recent=$(cat "$hook/recent" 2>/dev/null)
@@ -53,10 +81,17 @@ if [ -n "$list" ]; then recent="${recent}U"; else recent="${recent}-"; fi
 [ ${#recent} -gt 5 ] && recent=${recent:${#recent}-5}
 printf '%s' "$recent" > "$hook/recent"
 
+if [ -n "$delegate_msg" ] && [ -z "$list" ]; then
+  context "$delegate_msg"
+  exit 0
+fi
+
 if [ -z "$list" ]; then
   # A one-line reminder each message, so the skill doesn't fade in long sessions.
   if [ "$(cat "$hook/mode" 2>/dev/null || echo manual)" = manual ]; then
-    context "[stickshift] Manual mode: the user plans and writes the code. Use the hint ladder for their project's logic; answer syntax and quick factual questions directly."
+    msg="[stickshift] Manual mode: the user plans and writes the code. Use the hint ladder for their project's logic; answer syntax and quick factual questions directly."
+    [ -s "$hook/delegated" ] && msg="$msg Delegated to you for this feature: $(joined "$hook/delegated")."
+    context "$msg"
   fi
   exit 0
 fi

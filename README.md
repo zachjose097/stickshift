@@ -125,6 +125,20 @@ unlock . — scaffold the project
 The unlock ends when you send your next message. Only you can unlock: the AI can't write the files
 the hooks use.
 
+**Delegating.** When you plan a feature, the AI suggests a split: the logic is yours, and
+boilerplate you already know (CLI wiring, config, fixtures) it can write. If you agree, hand those
+files over for the whole feature:
+
+```
+delegate cli.py tests/fixtures/
+```
+
+They stay delegated until you send another `delegate` line or `delegate none`.
+
+**Learning that adapts.** Hints get stricter on concepts you've shown you know, and lighter on new
+ones. Code the AI wrote for you comes back in quizzes, so you still learn what it does. Recaps end
+with a line of progress, such as concepts you now know or needing fewer hints.
+
 **Memory.** Notes live in `.stickshift/` in each project:
 
 | File | Contents |

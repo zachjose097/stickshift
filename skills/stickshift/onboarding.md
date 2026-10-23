@@ -30,5 +30,6 @@ Ask in chat what they're building, in a sentence or two. Start `map.md` with the
 
 ## Close
 
-One short paragraph: manual mode is on, how to unlock (`unlock <path>` at the start of a message),
-and the commands: review, quiz, audit, debug, recap, pause.
+One short paragraph: manual mode is on, how to unlock (`unlock <path>` at the start of a message,
+for one request), that when planning a feature you'll suggest which boilerplate files they could
+hand you with `delegate <paths>`, and the commands: review, quiz, audit, debug, recap, pause.

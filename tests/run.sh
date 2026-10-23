@@ -92,6 +92,33 @@ expect allow "unlock . covers the whole project" Write "$(w "$proj/anything.py")
 prompt "please unlock src/a.py"
 expect deny  "unlock only counts at the start of the message" Write "$(w "$proj/src/a.py")"
 
+# Delegations cover the named paths until replaced, cleared, or Stickshift restarts.
+prompt "delegate cli.py src/table/ — for monthly totals"
+expect allow "delegated file" Write "$(w "$proj/cli.py")"
+expect allow "file inside a delegated folder" Write "$(w "$proj/src/table/fmt.py")"
+expect deny  "file that wasn't delegated" Write "$(w "$proj/src/a.py")"
+prompt "how's it going?"
+prompt "and now?"
+expect allow "delegation lasts across messages" Write "$(w "$proj/cli.py")"
+prompt "unlock src/a.py — one change"
+expect allow "unlock works alongside a delegation" Write "$(w "$proj/src/a.py")"
+expect allow "delegation survives an unlock" Write "$(w "$proj/cli.py")"
+expect deny  "delegation doesn't cover .hook" Write "$(w "$state/.hook/delegated")"
+grep -q 'delegate	cli.py, src/table' "$state/.hook/unlocks.log" && ok || bad "delegation wasn't logged"
+out=$(jq -n --arg c "$proj" '{cwd: $c, source: "startup"}' | bash "$hooks/session-start.sh")
+grep -q 'Delegated to you for the current feature: cli.py, src/table\.' <<<"$out" && ok ||
+  bad "session start doesn't mention the delegation"
+prompt "delegate report.py"
+expect allow "new delegation" Write "$(w "$proj/report.py")"
+expect deny  "new delegation replaces the old one" Write "$(w "$proj/cli.py")"
+prompt "please delegate cli.py"
+expect deny  "delegate only counts at the start of the message" Write "$(w "$proj/cli.py")"
+prompt "Delegate None"
+expect deny  "delegate none clears it" Write "$(w "$proj/report.py")"
+prompt "delegate cli.py"
+(cd "$proj" && bash "$repo/scripts/init.sh" >/dev/null)
+expect deny  "start clears delegations" Write "$(w "$proj/cli.py")"
+
 # Automatic mode lifts the lock, except on .hook.
 (cd "$proj" && bash "$repo/scripts/pause.sh" >/dev/null)
 expect allow "automatic mode allows project files" Write "$(w "$proj/src/a.py")"
@@ -131,6 +158,13 @@ concepts; concept A confirmed "✓ $(date +%F)"
 expect_quiz none "quizzed today"
 out=$(jq -n --arg c "$proj" '{cwd: $c}' | bash "$hooks/session-start.sh")
 jq -e . >/dev/null <<<"$out" && ok || bad "session-start without a source field isn't valid JSON"
+
+# Counts skip the templates' commented-out examples.
+cp "$repo/templates/questions.md" "$state/questions.md"
+grep -q 'Open questions: 0\.' <<<"$out" && ok || bad "the questions template counts as an open question"
+echo "- [ ] Why does the BOM break the header? (2026-10-24)" >> "$state/questions.md"
+out=$(jq -n --arg c "$proj" '{cwd: $c}' | bash "$hooks/session-start.sh")
+grep -q 'Open questions: 1\.' <<<"$out" && ok || bad "a real open question isn't counted"
 
 echo "$pass passed, $fail failed"
 [ "$fail" = 0 ]

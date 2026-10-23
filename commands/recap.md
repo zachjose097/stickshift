@@ -14,3 +14,7 @@ Wrap up this session. Use the stickshift skill.
      time, all optional.
    - Open questions.
    - Suggested next step.
+4. End with one or two lines of progress over the last week, from the notes: known concepts in the
+   profile (count then and now, by the dates), concepts confirmed, quiz score, and a concept whose
+   `Hints` rung went down ("Loops: rung 3 → rung 1"). Only show numbers that changed; skip the
+   section in a project's first week if there's nothing to compare.

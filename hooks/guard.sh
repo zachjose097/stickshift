@@ -36,14 +36,15 @@ check_path() {
     *) return 0 ;;   # Outside the project, e.g. the global profile.
   esac
   rel=${p#"$root/"}
-  if [ -f "$state/.hook/unlocks" ]; then
+  for f in unlocks delegated; do
+    [ -f "$state/.hook/$f" ] || continue
     while IFS= read -r u; do
       [ -n "$u" ] || continue
       [ "$u" = . ] || [ "$u" = "$rel" ] && return 0
       case "$rel" in "${u%/}/"*) return 0 ;; esac
-    done < "$state/.hook/unlocks"
-  fi
-  deny "Stickshift manual mode: the user writes the project code, so you can't edit $rel. Help through the hint ladder instead (question, concept, pseudocode, unrelated example). If the user wants you to write it, they can start their next message with: unlock $rel"
+    done < "$state/.hook/$f"
+  done
+  deny "Stickshift manual mode: the user writes the project code, so you can't edit $rel. Help through the hint ladder instead (question, concept, pseudocode, unrelated example). If the user wants you to write it, they can start their next message with: unlock $rel (for one request) or delegate $rel (for the whole feature, replacing any current delegation)"
 }
 
 # Check every file a Codex patch ($1) adds, updates, deletes or moves to.
