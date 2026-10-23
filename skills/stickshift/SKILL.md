@@ -108,8 +108,9 @@ writing it correctly without hints. Never on your own explanation.
 ## Commands in Codex
 
 Codex has no plugin slash commands. When the user asks for a Stickshift command (`stickshift
-quiz`, `/stickshift:audit bugs`, "start stickshift"), read `commands/<name>.md` in the plugin root
-(two folders above this file) and follow it:
+quiz`, `/stickshift:audit bugs`, "start stickshift"), read `<plugin root>/commands/<name>.md` and
+follow it. The plugin root is in the session context; it's two folders above this file, not under
+`skills/`.
 
 - `$ARGUMENTS` is whatever they wrote after the command name.
 - A line like `` !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/init.sh` `` means: run that script yourself

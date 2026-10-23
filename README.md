@@ -10,38 +10,101 @@ See [DESIGN.md](DESIGN.md) for the reasoning behind each decision.
 
 ## Install
 
-Requirements: Claude Code or Codex, `bash`, `git` and `jq` (built into macOS 15+; elsewhere
-install with your package manager).
+Stickshift works with [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) and
+[Codex](https://developers.openai.com/codex). Follow the steps for the one you use. It takes about
+two minutes.
+
+### Before you start
+
+You need:
+
+- **Claude Code or Codex**, installed and signed in. For Codex you need the `codex` command in your
+  terminal (the Codex CLI), not only the app or editor extension.
+- **macOS or Linux.** On Windows, use WSL.
+- **`git` and `jq`
+
 
 ### Claude Code
 
-```
-/plugin marketplace add /path/to/stickshift
-/plugin install stickshift@stickshift
-```
+1. **Add the Stickshift marketplace.** A marketplace is a list of plugins Claude Code can install
+   from; this repo is one. In a terminal, run:
 
-Restart Claude Code, then in a project:
+   ```
+   claude plugin marketplace add https://github.com/zachjose097/stickshift.git
+   ```
 
-```
-/stickshift:start
-```
+2. **Install the plugin:**
+
+   ```
+   claude plugin install stickshift@stickshift
+   ```
+
+   (`stickshift@stickshift` means "the stickshift plugin from the stickshift marketplace".)
+
+   You can also do steps 1 and 2 inside Claude Code by typing
+   `/plugin marketplace add https://github.com/zachjose097/stickshift.git` and then
+   `/plugin install stickshift@stickshift`.
+
+3. **Restart Claude Code** if it was open, so it loads the plugin.
+
+4. **Start Stickshift in a project.** Open Claude Code in your project folder and type:
+
+   ```
+   /stickshift:start
+   ```
+
+   It should reply that Stickshift was created in manual mode and ask a few onboarding
+   questions. If `/stickshift:start` isn't recognised, check that the install worked with
+   `claude plugin list`.
 
 ### Codex
 
-```
-codex plugin marketplace add /path/to/stickshift
-codex plugin add stickshift@stickshift
-```
+1. **Add the Stickshift marketplace.** A marketplace is a list of plugins Codex can install from;
+   this repo is one. In a terminal, run:
 
-Start Codex and run `/hooks` to review and trust Stickshift's hooks. Codex doesn't run a plugin's
-hooks until you do, and without them there's no edit lock. Then, in a project, ask:
+   ```
+   codex plugin marketplace add https://github.com/zachjose097/stickshift.git
+   ```
 
-```
-stickshift start
-```
+2. **Install the plugin:**
 
-Codex has no plugin slash commands, so ask for the commands below by name instead: `stickshift
-quiz`, `stickshift audit security`. Unlocking works the same in both.
+   ```
+   codex plugin add stickshift@stickshift
+   ```
+
+   (`stickshift@stickshift` means "the stickshift plugin from the stickshift marketplace".) In the
+   Codex app you can install it from the Plugins Directory instead, once step 1 is done.
+
+3. **Trust Stickshift's hooks.** Hooks are small scripts the plugin runs automatically, and they
+   are what stop the AI editing your files. Codex doesn't run a plugin's hooks until you approve
+   them. Start Codex, type `/hooks`, and trust the Stickshift hooks it lists.
+
+4. **Start Stickshift in a project.** Open Codex in your project folder and type:
+
+   ```
+   stickshift start
+   ```
+
+   Codex has no plugin slash commands, so you ask for each command by name: `stickshift quiz`,
+   `stickshift audit security`. If Codex asks to approve a command that writes outside your
+   project, approve it: the start script adds `.stickshift/` to `.git/info/exclude` and creates
+   your profile folder in `~/.claude/stickshift/`.
+
+### Updating and removing
+
+| | Claude Code | Codex |
+|---|---|---|
+| Update | `claude plugin marketplace update stickshift`, then `claude plugin update stickshift@stickshift` | `codex plugin marketplace upgrade stickshift`, then `codex plugin add stickshift@stickshift` |
+| Remove | `claude plugin uninstall stickshift@stickshift` | `codex plugin remove stickshift@stickshift` |
+
+Removing the plugin leaves your notes (`.stickshift/` in each project) and your profile
+(`~/.claude/stickshift/`). Delete those yourself if you don't want them.
+
+### From a local copy
+
+To try your own changes, use the path to your clone in place of the GitHub URL in step 1.
+Codex installs a copy of the plugin, so run `codex plugin add stickshift@stickshift` again after
+each change.
 
 ## How it works
 

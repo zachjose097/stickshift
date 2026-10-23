@@ -6,6 +6,12 @@
 
 . "$(dirname "$0")/lib.sh"
 
+# Send text to the model as context. JSON, because Codex reads plain output that
+# starts with "[" as broken JSON and drops it.
+context() {
+  jq -n --arg c "$1" '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $c}}'
+}
+
 input=$(cat)
 cwd=$(jq -r '.cwd // empty' <<<"$input")
 [ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
@@ -50,17 +56,19 @@ printf '%s' "$recent" > "$hook/recent"
 if [ -z "$list" ]; then
   # A one-line reminder each message, so the skill doesn't fade in long sessions.
   if [ "$(cat "$hook/mode" 2>/dev/null || echo manual)" = manual ]; then
-    echo "[stickshift] Manual mode: the user plans and writes the code. Use the hint ladder for their project's logic; answer syntax and quick factual questions directly."
+    context "[stickshift] Manual mode: the user plans and writes the code. Use the hint ladder for their project's logic; answer syntax and quick factual questions directly."
   fi
   exit 0
 fi
 
 printf '%s\t%s\n' "$(date '+%Y-%m-%d %H:%M')" "$list" >> "$hook/unlocks.log"
-echo "[stickshift] The user unlocked these paths for this request only: $list. You may edit them now. Afterwards, briefly explain the code you wrote and ask one question to check they followed it. Add the unlock to today's entry in .stickshift/journal.md."
+msg="[stickshift] The user unlocked these paths for this request only: $list. You may edit them now. Afterwards, briefly explain the code you wrote and ask one question to check they followed it. Add the unlock to today's entry in .stickshift/journal.md."
 
 # Nudge once, when a run of unlocks reaches four.
 streak=${recent##*-}
 if [ ${#streak} -eq 4 ]; then
-  echo "[stickshift] The user's last 4 messages were all unlocks. Mention this once, lightly, and offer to let them write the next piece. Don't refuse or lecture."
+  msg="$msg
+[stickshift] The user's last 4 messages were all unlocks. Mention this once, lightly, and offer to let them write the next piece. Don't refuse or lecture."
 fi
+context "$msg"
 exit 0
