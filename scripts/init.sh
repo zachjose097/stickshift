@@ -11,7 +11,8 @@ state="$root/.stickshift"
 global="$HOME/.claude/stickshift"
 
 if [ -d "$state" ]; then status=resumed; else status=created; fi
-mkdir -p "$state/.hook" "$global"
+mkdir -p "$state/.hook"
+mkdir -p "$global" 2>/dev/null || echo "WARNING: couldn't create $global (a sandbox may block writes outside the project). Ask the user to approve running this script again outside the sandbox."
 for f in decisions concepts map questions journal; do
   [ -f "$state/$f.md" ] || cp "$templates/$f.md" "$state/$f.md"
 done
@@ -23,12 +24,14 @@ gitdir=$(git -C "$root" rev-parse --git-dir 2>/dev/null)
 if [ -n "$gitdir" ]; then
   case "$gitdir" in /*) ;; *) gitdir="$root/$gitdir" ;; esac
   exclude="$gitdir/info/exclude"
-  mkdir -p "$(dirname "$exclude")"
   if grep -qxF '.stickshift/' "$exclude" 2>/dev/null; then
     git_note="already excluded via .git/info/exclude"
-  else
-    printf '\n# Stickshift learning notes (local only)\n.stickshift/\n' >> "$exclude"
+  elif mkdir -p "$(dirname "$exclude")" 2>/dev/null &&
+    printf '\n# Stickshift learning notes (local only)\n.stickshift/\n' 2>/dev/null >> "$exclude"; then
     git_note="added to .git/info/exclude"
+  else
+    # Codex's sandbox makes .git read-only.
+    git_note="WARNING: NOT excluded from git, couldn't write $exclude. Tell the user plainly: their notes could be committed. Ask them to approve running this script again outside the sandbox, or to add .stickshift/ to that file themselves."
   fi
 else
   git_note="not a git repository, nothing to exclude"

@@ -2,9 +2,9 @@
 
 > Vibe coding is autopilot. Stickshift puts you back in the driver's seat.
 
-Stickshift is a Claude Code plugin for learning while you build. You write the code and make the
-decisions. The AI acts as a research partner, reviewer and tutor, and it keeps a memory of what you
-learned and decided as the project grows.
+Stickshift is a plugin for Claude Code and Codex for learning while you build. You write the code
+and make the decisions. The AI acts as a research partner, reviewer and tutor, and it keeps a memory
+of what you learned and decided as the project grows.
 
 Status: built, not yet tested on a real project (2026-10-23).
 
@@ -50,7 +50,7 @@ Stickshift flips the roles:
 | 9 | Quiz | `/stickshift:quiz` from your repo and notes, with spaced repetition | Checks you understand your own project. |
 | 10 | Audit | `/stickshift:audit` covering bugs, security, clean code, tests and dependencies | Catches problems and turns most of them into exercises. |
 | 11 | Debugging | `/stickshift:debug` walks you through the process | Builds the habit instead of handing over the fix. |
-| 12 | Codex support | Not planned | Not needed. |
+| 12 | Codex support | Same plugin, no separate build | Codex reads the `.claude-plugin/` manifests and `hooks/hooks.json`, so one codebase covers both. See 4.11. |
 | 13 | Python dependency | None. Hooks are shell scripts | Fewer things to install. |
 
 ## 4. Features
@@ -210,6 +210,22 @@ The hint ladder applies at every step.
   `/stickshift:start` resumes. Memory keeps being read.
 - `/stickshift:reset` backs up `.stickshift/` (and, with `profile`, the learner profile) to
   `~/.claude/stickshift/backups/`, removes it, and offers to run `/stickshift:start` again.
+
+### 4.11 Codex
+
+Codex loads the plugin as it is: it reads `.claude-plugin/plugin.json` and `marketplace.json`,
+runs `hooks/hooks.json`, and sets `CLAUDE_PLUGIN_ROOT`. The differences:
+
+| | Claude Code | Codex |
+|---|---|---|
+| File edits | `Write`, `Edit`, ... with a `file_path` | `apply_patch`, one patch in `tool_input.command`. The guard checks every file the patch adds, updates, deletes or moves to |
+| Reading files | `Read` tool | The shell. The guard lets plain one-line reads (`cat`, `tail`, ...) touch `.stickshift/.hook/` |
+| Commands | `/stickshift:<name>` | No plugin slash commands. You ask by name and the skill reads `commands/<name>.md` and runs its script |
+| Session context | Up to ~14 KB | Capped at about 2,500 tokens by Codex, so the session-start hook sends less |
+| Hooks | Run once the plugin is installed | Run only after you trust them with `/hooks` |
+
+Because the AI runs the scripts in Codex, switching modes depends on it running `pause.sh` and
+`reset.sh` only when you ask. In Claude Code, the slash command runs them for you.
 
 ## 5. Commands
 
