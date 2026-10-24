@@ -1,6 +1,6 @@
 {
   "name": "stickshift",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Vibe coding is autopilot. Stickshift puts you back in the driver's seat: you write the code, the AI researches, hints, reviews and quizzes, and your decisions and lessons are kept in memory.",
   "author": { "name": "Zach" },
   "license": "MIT",

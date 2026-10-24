@@ -147,6 +147,8 @@ follow it. The plugin root is in the session context; it's two folders above thi
 - A line that is an exclamation mark followed by a command in backticks (start.md's setup line
   is one) means: run that script yourself from the project directory, with the plugin root in
   place of the variable, and use its output.
-- Run `pause.sh` or `reset.sh` only when the user asked for that command in their own message.
+- Run `pause.sh` or `reset.sh` only when the user asked for that command in their own message. A
+  hook allows them only then, for a message starting with `stickshift pause` or `stickshift reset`;
+  if they asked in other words, tell them to send that.
 - The scripts write to `~/.claude/stickshift/` and `.git/info/exclude`, so Codex may ask the user
   to approve them.

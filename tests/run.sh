@@ -16,6 +16,7 @@ proj=$(cd "$tmp" && mkdir proj && cd proj && pwd -P)
 export HOME="$tmp/home"
 mkdir -p "$HOME"
 git -C "$proj" init -q
+mkdir -p "$proj/src" "$proj/tests" && echo a > "$proj/src/a.py"
 (cd "$proj" && bash "$repo/scripts/init.sh" >/dev/null)
 state="$proj/.stickshift"
 
@@ -77,6 +78,39 @@ expect deny  "Codex patch to a project file" apply_patch \
 expect allow "Codex patch to notes" apply_patch \
   "$(sh $'*** Begin Patch\n*** Update File: .stickshift/map.md\n@@\n-a\n+b\n*** End Patch')"
 
+expect deny  "clobber redirect" Bash "$(sh "echo x >| src/a.py")"
+expect deny  "cp into a project file" Bash "$(sh "cp /tmp/x src/a.py")"
+expect deny  "mv onto a project file" Bash "$(sh "mv /tmp/x src/b.py")"
+expect deny  "rm a project file" Bash "$(sh "rm -f src/a.py")"
+expect deny  "dd into a project file" Bash "$(sh "dd if=/dev/zero of=src/a.py")"
+expect deny  "sed -i through .stickshift/.." Bash "$(sh "sed -i '' s/a/b/ .stickshift/../src/a.py")"
+expect deny  "sed -i on a project file next to a note" Bash "$(sh "sed -i '' s/a/b/ src/a.py .stickshift/journal.md")"
+expect deny  "perl -pi on a project file" Bash "$(sh "perl -pi -e 's/a/b/' src/a.py")"
+expect deny  "git checkout -- a file" Bash "$(sh "git checkout -- src/a.py")"
+expect deny  "git reset --hard" Bash "$(sh "git status && git reset --hard")"
+expect deny  "git stash" Bash "$(sh "git stash")"
+expect allow "git stash list" Bash "$(sh "git stash list")"
+expect allow "git log" Bash "$(sh "git log --oneline -5")"
+expect allow "cp into notes" Bash "$(sh "cp /tmp/x .stickshift/questions.md")"
+expect allow "cp out of the project" Bash "$(sh "cp src/a.py /tmp/a.py")"
+expect deny  "rm the notes folder" Bash "$(sh "rm -rf .stickshift")"
+expect deny  "rm the project" Bash "$(sh "rm -rf .")"
+expect deny  "mv the notes folder" Bash "$(sh "mv .stickshift /tmp/old")"
+expect deny  "running pause.sh without being asked" Bash "$(sh "bash $repo/scripts/pause.sh")"
+expect deny  "running reset.sh without being asked" Bash "$(sh "bash $repo/scripts/reset.sh")"
+ln -s ../src/a.py "$state/link"
+expect deny  "Write through a symlink in notes" Write "$(w "$state/link")"
+rm "$state/link"
+
+# The user's own pause and reset allow the model to run that script, for that message.
+prompt "stickshift pause"
+expect allow "pause.sh after the user asked" Bash "$(sh "bash $repo/scripts/pause.sh")"
+expect deny  "reset.sh after the user asked for pause" Bash "$(sh "bash $repo/scripts/reset.sh")"
+prompt "/stickshift:reset profile"
+expect allow "reset.sh after the user asked" Bash "$(sh "bash $repo/scripts/reset.sh profile")"
+prompt "ok"
+expect deny  "permission ends after the message" Bash "$(sh "bash $repo/scripts/pause.sh")"
+
 # Unlocks cover the named paths, for one message only.
 prompt "unlock src/a.py lib/ — write the reader"
 expect allow "unlocked file" Write "$(w "$proj/src/a.py")"
@@ -89,6 +123,13 @@ prompt "thanks"
 expect deny  "unlock expired after the next message" Write "$(w "$proj/src/a.py")"
 prompt "Unlock . - do it all"
 expect allow "unlock . covers the whole project" Write "$(w "$proj/anything.py")"
+prompt "unlock src/a.py to add tests"
+expect allow "unlock stops at the first word that isn't a path" Write "$(w "$proj/src/a.py")"
+expect deny  "words after the paths aren't unlocked" Write "$(w "$proj/tests/test_a.py")"
+prompt "unlock: src/a.py – en dash"
+expect allow "unlock with a colon and an en dash" Write "$(w "$proj/src/a.py")"
+prompt "Unlock screens need a timeout, how?"
+[ ! -s "$state/.hook/unlocks" ] && ok || bad "a sentence starting with Unlock unlocked: $(cat "$state/.hook/unlocks")"
 prompt "please unlock src/a.py"
 expect deny  "unlock only counts at the start of the message" Write "$(w "$proj/src/a.py")"
 
@@ -165,6 +206,37 @@ grep -q 'Open questions: 0\.' <<<"$out" && ok || bad "the questions template cou
 echo "- [ ] Why does the BOM break the header? (2026-10-24)" >> "$state/questions.md"
 out=$(jq -n --arg c "$proj" '{cwd: $c}' | bash "$hooks/session-start.sh")
 grep -q 'Open questions: 1\.' <<<"$out" && ok || bad "a real open question isn't counted"
+
+# --- Scripts -----------------------------------------------------------------
+
+# Reset removes nothing it couldn't back up.
+r=$(mktemp -d)
+(cd "$r" && git init -q && HOME="$r/home" bash "$repo/scripts/init.sh" >/dev/null)
+mkdir -p "$r/home/.claude/stickshift" && chmod 500 "$r/home/.claude/stickshift"
+(cd "$r" && HOME="$r/home" bash "$repo/scripts/reset.sh" >/dev/null)
+[ -d "$r/.stickshift" ] && ok || bad "reset removed the notes when the backup failed"
+chmod 700 "$r/home/.claude/stickshift"
+(cd "$r" && HOME="$r/home" bash "$repo/scripts/reset.sh" >/dev/null)
+[ ! -d "$r/.stickshift" ] && [ -n "$(ls "$r/home/.claude/stickshift/backups")" ] && ok || bad "reset didn't back up and remove the notes"
+
+# In a git worktree the exclude goes where git reads it.
+git -C "$proj" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+git -C "$proj" worktree add -q "$r/wt"
+(cd "$r/wt" && bash "$repo/scripts/init.sh" >/dev/null)
+[ -z "$(git -C "$r/wt" status --porcelain)" ] && ok || bad "notes aren't excluded in a worktree"
+git -C "$proj" worktree remove --force "$r/wt"
+rm -rf "$r"
+
+# Without jq, the guard fails closed and session start explains why.
+nojq=$(mktemp -d)
+for b in bash git cat sed grep dirname basename head tail date paste tr pwd; do
+  p=$(command -v "$b") && ln -s "$p" "$nojq/$b"
+done
+(cd "$proj" && echo '{}' | PATH="$nojq" bash "$hooks/guard.sh" 2>/dev/null)
+[ $? = 2 ] && ok || bad "guard without jq doesn't block"
+(cd "$proj" && echo '{}' | PATH="$nojq" bash "$hooks/session-start.sh") | grep -q "jq isn't installed" && ok ||
+  bad "session start without jq doesn't explain"
+rm -rf "$nojq"
 
 echo "$pass passed, $fail failed"
 [ "$fail" = 0 ]

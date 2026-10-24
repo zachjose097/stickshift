@@ -6,7 +6,8 @@ Stickshift is a plugin for Claude Code and Codex for learning while you build. Y
 and make the decisions. The AI acts as a research partner, reviewer and tutor, and it keeps a memory
 of what you learned and decided as the project grows.
 
-Status: built, not yet tested on a real project (2026-10-23).
+Status: built and tried in Claude Code; in Codex, start and onboarding tried, the hooks not yet
+live (2026-10-24).
 
 ---
 
@@ -68,7 +69,9 @@ unlock src/config.ts — write the env loader
 
 A `UserPromptSubmit` hook reads your message and records the unlock in
 `.stickshift/.hook/unlocks`. The AI cannot write anything in `.stickshift/.hook/` (the edit hook
-protects it), so only you can unlock or change modes. An unlock covers the named files or folders
+protects it), so only you can unlock or change modes. The paths end at a dash or colon, or at the
+first word that isn't a path (no `/` or `.`, and doesn't exist), so a sentence that happens to
+start with "unlock" unlocks nothing. An unlock covers the named files or folders
 for that one request and is cleared when the next prompt arrives. `unlock .` unlocks the whole
 project for one request.
 
@@ -90,9 +93,19 @@ what's delegated. It's still your message that grants it, so only you can hand f
 
 The lock only applies in projects where you ran `/stickshift:start`. Other projects are untouched.
 
-**Known gap.** The AI could still write files through `Bash` (`sed -i`, `cat >`, `tee`). The hook
-catches the common patterns. The skill instructions cover the rest. The lock is a strong guardrail,
-not a security boundary.
+**Turning it off.** Pausing, resetting and deleting `.stickshift/` all switch the lock off, so the
+hook denies them to the AI. Pause and reset are allowed only while answering a message of yours
+that asks for them (`/stickshift:pause`, `stickshift reset`): the prompt hook records the request in
+`.stickshift/.hook/command` for that one message. In Claude Code the slash command runs the script
+before the AI is involved; in Codex the AI runs it, inside that window.
+
+**Fail closed.** Without `jq` the hooks can't read their input, so in a Stickshift project the edit
+hook blocks every call it covers and session start tells the AI to ask you to install it.
+
+**Known gap.** The AI could still write files through `Bash`. The hook catches redirects, `tee`,
+`cp`, `mv`, `rm`, `dd`, `sed -i`, `perl -i`, patches, and git commands that discard changes, but
+not, say, a Python one-liner that writes a file. The skill instructions cover the rest. The lock is
+a strong guardrail, not a security boundary.
 
 ### 4.2 The hint ladder
 

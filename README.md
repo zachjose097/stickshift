@@ -21,7 +21,9 @@ You need:
 - **Claude Code or Codex**, installed and signed in. For Codex you need the `codex` command in your
   terminal (the Codex CLI), not only the app or editor extension.
 - **macOS or Linux.** On Windows, use WSL.
-- **`git` and `jq`
+- **`git` and `jq`.** The hooks need `jq` to read what the AI is doing; without it Stickshift
+  blocks the AI's edits and asks you to install it. macOS 15 and later include `jq`; otherwise
+  `brew install jq` (macOS) or `sudo apt install jq` (Debian, Ubuntu).
 
 
 ### Claude Code
@@ -88,7 +90,9 @@ You need:
    Codex has no plugin slash commands, so you ask for each command by name: `stickshift quiz`,
    `stickshift audit security`. If Codex asks to approve a command that writes outside your
    project, approve it: the start script adds `.stickshift/` to `.git/info/exclude` and creates
-   your profile folder in `~/.claude/stickshift/`.
+   your profile folder in `~/.claude/stickshift/`. Codex's sandbox keeps `.git` read-only, so
+   without that approval your notes aren't excluded from git; the AI will tell you if so. You can
+   also add the line `.stickshift/` to `.git/info/exclude` yourself.
 
 ### Updating and removing
 
@@ -122,8 +126,12 @@ unlock src/fixtures/ tests/setup.ts — generate test data
 unlock . — scaffold the project
 ```
 
-The unlock ends when you send your next message. Only you can unlock: the AI can't write the files
-the hooks use.
+The paths end at a dash or colon, or at the first word that isn't a path, so
+`unlock app.py to add tests` unlocks only `app.py`. A word counts as a path if it has a `/` or `.`
+in it or already exists; for a new file without either, write `./Makefile`.
+
+The unlock ends when you send your next message. Only you can unlock or switch modes: the AI can't
+write the files the hooks use, delete the notes, or run pause or reset unless your message asked.
 
 **Delegating.** When you plan a feature, the AI suggests a split: the logic is yours, and
 boilerplate you already know (CLI wiring, config, fixtures) it can write. If you agree, hand those
@@ -171,13 +179,16 @@ like `.gitignore` but stays on your machine.
 
 ## Limits
 
-- The edit lock blocks the AI's file-editing tools completely. Shell writes (`>`, `tee`, `sed -i`,
-  `patch`, `git apply`) are caught by pattern; a determined workaround such as a script that writes
-  files could slip past. It's a guardrail, not a sandbox.
+- The edit lock blocks the AI's file-editing tools completely. Shell writes (`>`, `tee`, `cp`,
+  `mv`, `rm`, `dd`, `sed -i`, `patch`, `git apply`, and git commands that discard changes such as
+  `git checkout --` or `git reset --hard`) are caught by pattern; a determined workaround such as a
+  script that writes files could slip past. It's a guardrail, not a sandbox.
 - Notes are read into the AI's context, so your Claude Code or Codex data settings apply to them.
 - In Codex, the AI runs the start, pause and reset scripts itself, because there are no slash
-  commands to run them for you. Switching modes relies on it doing that only when you ask.
-- Codex support hasn't been tried on a real Codex install yet.
+  commands to run them for you. The hooks allow pause and reset only in reply to a message of yours
+  that starts with `stickshift pause` or `stickshift reset`.
+- In Codex, starting and onboarding have been tried on a real install; the edit lock hooks have
+  only been tested with Codex-shaped input, not in a live Codex session yet.
 
 ## Development
 

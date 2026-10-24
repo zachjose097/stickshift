@@ -7,6 +7,7 @@
 # of how Stickshift works.
 
 . "$(dirname "$0")/lib.sh"
+ss_no_jq >/dev/null && exit 0   # guard.sh blocks edits and session-start.sh explains.
 
 # Send text to the model as context. JSON, because Codex reads plain output that
 # starts with "[" as broken JSON and drops it.
@@ -21,21 +22,31 @@ root=$(ss_root "$cwd")
 hook="$root/.stickshift/.hook"
 [ -d "$hook" ] || exit 0
 
-# Unlocks last for one request.
+# Unlocks, and permission to run pause.sh or reset.sh, last for one request.
 : > "$hook/unlocks"
+: > "$hook/command"
 
 first=$(jq -r '.prompt // empty' <<<"$input" | head -n 1)
+
+# The user's own pause or reset ("/stickshift:pause", "stickshift reset profile").
+# guard.sh lets the model run that script only now: in Codex it has to run it itself.
+asked=$(printf '%s\n' "$first" |
+  sed -nE 's#^[[:space:]]*/?stickshift[:[:space:]]+(pause|reset)([[:space:]].*)?$#\1#Ip' | tr '[:upper:]' '[:lower:]')
+[ -n "$asked" ] && printf '%s\n' "$asked" > "$hook/command"
 
 # The rest of the first line after keyword $1, up to a dash or colon, or nothing.
 spec_after() {
   local s
-  s=$(printf '%s\n' "$first" | sed -nE "s/^[[:space:]]*$1[[:space:]]+//Ip")
+  s=$(printf '%s\n' "$first" | sed -nE "s/^[[:space:]]*$1:?[[:space:]]+//Ip")
   s=${s%%—*}
+  s=${s%%–*}
   s=${s%% - *}
   printf '%s' "${s%%:*}"
 }
 
 # Print each path in $1 that is inside the project, relative to the root (. for the root).
+# Stops at the first word that doesn't look like a path, so "unlock app.py to add tests"
+# unlocks only app.py: a path has a slash or a dot in it, or already exists.
 project_paths() {
   local w p
   set -f
@@ -43,6 +54,7 @@ project_paths() {
     w=$(printf '%s' "$w" | tr -d "\"'\`,")
     [ -n "$w" ] || continue
     p=$(ss_abs "$w" "$cwd")
+    case "$w" in */* | *.*) ;; *) [ -e "$p" ] || break ;; esac
     if [ "$p" = "$root" ]; then
       echo .
     else

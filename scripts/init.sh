@@ -10,6 +10,8 @@ root=$(ss_root "$PWD")
 state="$root/.stickshift"
 global="$HOME/.claude/stickshift"
 
+ss_no_jq
+
 if [ -d "$state" ]; then status=resumed; else status=created; fi
 mkdir -p "$state/.hook"
 mkdir -p "$global" 2>/dev/null || echo "WARNING: couldn't create $global (a sandbox may block writes outside the project). Ask the user to approve running this script again outside the sandbox."
@@ -21,10 +23,10 @@ done
 echo manual > "$state/.hook/mode"
 
 # Keep the notes out of git without touching the committed .gitignore.
-gitdir=$(git -C "$root" rev-parse --git-dir 2>/dev/null)
-if [ -n "$gitdir" ]; then
-  case "$gitdir" in /*) ;; *) gitdir="$root/$gitdir" ;; esac
-  exclude="$gitdir/info/exclude"
+# --git-path, because a worktree's own git dir has an info/exclude that git ignores.
+exclude=$(git -C "$root" rev-parse --git-path info/exclude 2>/dev/null)
+if [ -n "$exclude" ]; then
+  case "$exclude" in /*) ;; *) exclude="$root/$exclude" ;; esac
   if grep -qxF '.stickshift/' "$exclude" 2>/dev/null; then
     git_note="already excluded via .git/info/exclude"
   elif mkdir -p "$(dirname "$exclude")" 2>/dev/null &&

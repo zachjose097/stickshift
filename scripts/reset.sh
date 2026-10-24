@@ -20,14 +20,19 @@ if [ ! -d "$state" ] && [ "$1" != profile ]; then
   exit 0
 fi
 
-mkdir -p "$backup"
+# Remove nothing that wasn't backed up.
+failed() {
+  echo "Couldn't back up to $backup, so $1 was left as it was. A sandbox may block writes outside the project: ask the user to approve running this again outside it."
+  exit 1
+}
+mkdir -p "$backup" 2>/dev/null || failed "everything"
 if [ -d "$state" ]; then
-  cp -R "$state" "$backup/"
+  cp -R "$state" "$backup/" 2>/dev/null || failed "$state"
   rm -rf "$state"
   echo "Project notes backed up to $backup/.stickshift and removed."
 fi
 if [ "$1" = profile ] && [ -f "$global/profile.md" ]; then
-  cp "$global/profile.md" "$backup/"
+  cp "$global/profile.md" "$backup/" 2>/dev/null || failed "the profile"
   rm "$global/profile.md"
   echo "Profile backed up to $backup/profile.md and removed."
 fi

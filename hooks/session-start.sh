@@ -4,6 +4,12 @@
 
 . "$(dirname "$0")/lib.sh"
 
+# Without jq, say so in plain text (it becomes context too) if this is a Stickshift project.
+if msg=$(ss_no_jq); then
+  [ -d "$(ss_root "$PWD")/.stickshift" ] && echo "$msg"
+  exit 0
+fi
+
 input=$(cat)
 cwd=$(jq -r '.cwd // empty' <<<"$input")
 source=$(jq -r '.source // empty' <<<"$input")
