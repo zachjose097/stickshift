@@ -209,6 +209,17 @@ grep -q 'Open questions: 1\.' <<<"$out" && ok || bad "a real open question isn't
 
 # --- Scripts -----------------------------------------------------------------
 
+# Start warns when the prompt hook didn't see the message that started it (outside Claude Code).
+hooks_warning() { (cd "$proj" && env -u CLAUDECODE "$@" bash "$repo/scripts/init.sh") | grep -c "hooks didn't run"; }
+rm -f "$HOME/.claude/stickshift/.hooks-seen"
+[ "$(hooks_warning)" = 1 ] && ok || bad "start doesn't warn when the hooks haven't run"
+[ "$(hooks_warning CLAUDECODE=1)" = 0 ] && ok || bad "start warns in Claude Code"
+prompt "stickshift start"
+[ "$(hooks_warning)" = 0 ] && ok || bad "start warns although the prompt hook ran"
+prompt "Stickshift start" && cp "$HOME/.claude/stickshift/.hooks-seen" "$tmp/seen"
+sed -E 's/^[0-9]+/1000/' "$tmp/seen" > "$HOME/.claude/stickshift/.hooks-seen"
+[ "$(hooks_warning)" = 1 ] && ok || bad "start doesn't warn when the hooks last ran long ago"
+
 # Reset removes nothing it couldn't back up.
 r=$(mktemp -d)
 (cd "$r" && git init -q && HOME="$r/home" bash "$repo/scripts/init.sh" >/dev/null)

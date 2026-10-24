@@ -79,7 +79,9 @@ You need:
 
 3. **Trust Stickshift's hooks.** Hooks are small scripts the plugin runs automatically, and they
    are what stop the AI editing your files. Codex doesn't run a plugin's hooks until you approve
-   them. Start Codex, type `/hooks`, and trust the Stickshift hooks it lists.
+   them. Start Codex, type `/hooks`, and trust the Stickshift hooks it lists. Do this again after
+   every update: Codex drops the trust when the hook scripts change, and until you trust them
+   again the edit lock is off.
 
 4. **Start Stickshift in a project.** Open Codex in your project folder and type:
 
@@ -98,7 +100,7 @@ You need:
 
 | | Claude Code | Codex |
 |---|---|---|
-| Update | `claude plugin marketplace update stickshift`, then `claude plugin update stickshift@stickshift` | `codex plugin marketplace upgrade stickshift`, then `codex plugin add stickshift@stickshift` |
+| Update | `claude plugin marketplace update stickshift`, then `claude plugin update stickshift@stickshift` | `codex plugin marketplace upgrade stickshift`, then `codex plugin add stickshift@stickshift`, then trust the hooks again with `/hooks` |
 | Remove | `claude plugin uninstall stickshift@stickshift` | `codex plugin remove stickshift@stickshift` |
 
 Removing the plugin leaves your notes (`.stickshift/` in each project) and your profile
@@ -187,8 +189,8 @@ like `.gitignore` but stays on your machine.
 - In Codex, the AI runs the start, pause and reset scripts itself, because there are no slash
   commands to run them for you. The hooks allow pause and reset only in reply to a message of yours
   that starts with `stickshift pause` or `stickshift reset`.
-- In Codex, starting and onboarding have been tried on a real install; the edit lock hooks have
-  only been tested with Codex-shaped input, not in a live Codex session yet.
+- In Codex, the hooks run only while you trust them, and an update removes that trust. If the AI
+  edits your files freely in manual mode, run `/hooks` and trust Stickshift again.
 
 ## Development
 

@@ -12,6 +12,19 @@ global="$HOME/.claude/stickshift"
 
 ss_no_jq
 
+# In Codex, hooks run only while the user trusts them, and an update drops that trust.
+# The prompt hook notes each message about Stickshift; if it didn't see the one that
+# started this, in this project in the last few minutes, the hooks aren't running.
+# Claude Code (CLAUDECODE=1) needs no trust, and runs this before the prompt hook.
+if [ "$CLAUDECODE" != 1 ]; then
+  seen=$(cat "$global/.hooks-seen" 2>/dev/null)
+  seen_at=${seen%%$'\t'*}
+  case "$seen_at" in '' | *[!0-9]*) seen_at=0 ;; esac
+  if [ "${seen#*$'\t'}" != "$root" ] || [ $(($(date +%s) - seen_at)) -gt 300 ]; then
+    echo "WARNING: Stickshift's hooks didn't run for this message, so the edit lock is off. Tell the user plainly: in Codex, type /hooks and trust the Stickshift hooks (needed again after every plugin update), then start a new session."
+  fi
+fi
+
 if [ -d "$state" ]; then status=resumed; else status=created; fi
 mkdir -p "$state/.hook"
 mkdir -p "$global" 2>/dev/null || echo "WARNING: couldn't create $global (a sandbox may block writes outside the project). Ask the user to approve running this script again outside the sandbox."

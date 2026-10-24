@@ -6,8 +6,7 @@ Stickshift is a plugin for Claude Code and Codex for learning while you build. Y
 and make the decisions. The AI acts as a research partner, reviewer and tutor, and it keeps a memory
 of what you learned and decided as the project grows.
 
-Status: built and tried in Claude Code; in Codex, start and onboarding tried, the hooks not yet
-live (2026-10-24).
+Status: built and tried in live sessions in Claude Code and Codex (2026-10-24).
 
 ---
 
@@ -266,7 +265,7 @@ runs `hooks/hooks.json`, and sets `CLAUDE_PLUGIN_ROOT`. The differences:
 | Reading files | `Read` tool | The shell. The guard lets plain one-line reads (`cat`, `tail`, ...) touch `.stickshift/.hook/` |
 | Commands | `/stickshift:<name>` | No plugin slash commands. You ask by name and the skill reads `commands/<name>.md` and runs its script |
 | Session context | Up to ~14 KB | Capped at about 2,500 tokens by Codex, so the session-start hook sends less |
-| Hooks | Run once the plugin is installed | Run only after you trust them with `/hooks` |
+| Hooks | Run once the plugin is installed | Run only after you trust them with `/hooks`, again after every update |
 
 Because the AI runs the scripts in Codex, switching modes depends on it running `pause.sh` and
 `reset.sh` only when you ask. In Claude Code, the slash command runs them for you.

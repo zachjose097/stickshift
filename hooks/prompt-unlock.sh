@@ -20,13 +20,22 @@ cwd=$(jq -r '.cwd // empty' <<<"$input")
 [ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
 root=$(ss_root "$cwd")
 hook="$root/.stickshift/.hook"
+first=$(jq -r '.prompt // empty' <<<"$input" | head -n 1)
+
+# Note when a message about Stickshift arrives, so init.sh can tell whether the hooks
+# run (Codex runs them only while the user trusts them, and an update drops that trust).
+case "$(printf '%s' "$first" | tr '[:upper:]' '[:lower:]')" in
+  *stickshift*)
+    mkdir -p "$HOME/.claude/stickshift" 2>/dev/null &&
+      printf '%s\t%s\n' "$(date +%s)" "$root" > "$HOME/.claude/stickshift/.hooks-seen" 2>/dev/null
+    ;;
+esac
+
 [ -d "$hook" ] || exit 0
 
 # Unlocks, and permission to run pause.sh or reset.sh, last for one request.
 : > "$hook/unlocks"
 : > "$hook/command"
-
-first=$(jq -r '.prompt // empty' <<<"$input" | head -n 1)
 
 # The user's own pause or reset ("/stickshift:pause", "stickshift reset profile").
 # guard.sh lets the model run that script only now: in Codex it has to run it itself.

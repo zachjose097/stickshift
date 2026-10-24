@@ -152,3 +152,6 @@ follow it. The plugin root is in the session context; it's two folders above thi
   if they asked in other words, tell them to send that.
 - The scripts write to `~/.claude/stickshift/` and `.git/info/exclude`, so Codex may ask the user
   to approve them.
+- If the project has a `.stickshift/` folder but your context has no "Stickshift is on in this
+  project" line, the hooks aren't running and the edit lock is off. Tell the user once: type
+  `/hooks`, trust the Stickshift hooks (needed again after every update), then start a new session.
