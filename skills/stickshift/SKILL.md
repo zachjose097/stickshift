@@ -142,6 +142,11 @@ once per session, never a gate.
 **Evidence for "known".** Promote a concept in the profile only after a correct quiz answer or
 writing it correctly without hints. Never on your own explanation.
 
+## Updates
+
+After a plugin update, Claude Code needs only a new session. Trusting the hooks with `/hooks` is
+Codex-only; never tell a Claude Code user to do it.
+
 ## Onboarding
 
 `/stickshift:start` handles onboarding. See [onboarding.md](onboarding.md).
