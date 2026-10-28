@@ -96,6 +96,17 @@ expect allow "cp out of the project" Bash "$(sh "cp src/a.py /tmp/a.py")"
 expect deny  "rm the notes folder" Bash "$(sh "rm -rf .stickshift")"
 expect deny  "rm the project" Bash "$(sh "rm -rf .")"
 expect deny  "mv the notes folder" Bash "$(sh "mv .stickshift /tmp/old")"
+if command -v cygpath >/dev/null 2>&1; then   # Windows paths, as Claude Code sends them there.
+  wproj=$(cygpath -w "$proj")
+  expect allow "Write to notes, Windows path" Write "$(w "$wproj\\.stickshift\\map.md")"
+  expect allow "Write to notes, forward slashes" Write "$(w "$(cygpath -m "$proj")/.stickshift/map.md")"
+  expect deny  "Write to a project file, Windows path" Write "$(w "$wproj\\src\\a.py")"
+  expect deny  "Write to .hook, Windows path" Write "$(w "$wproj\\.stickshift\\.hook\\mode")"
+  expect deny  "writing .hook from the shell, backslashes" Bash "$(sh "echo auto > .stickshift\\.hook\\mode")"
+  out=$(jq -n --arg c "$wproj" --arg p "$wproj\\src\\a.py" '{tool_name: "Write", tool_input: {file_path: $p}, cwd: $c}' |
+    bash "$hooks/guard.sh")
+  grep -q '"deny"' <<<"$out" && ok || bad "guard: Windows cwd (expected deny)"
+fi
 expect deny  "running pause.sh without being asked" Bash "$(sh "bash $repo/scripts/pause.sh")"
 expect deny  "running reset.sh without being asked" Bash "$(sh "bash $repo/scripts/reset.sh")"
 ln -s ../src/a.py "$state/link"

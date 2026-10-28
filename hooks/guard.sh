@@ -151,7 +151,7 @@ case "$tool" in
   Bash)
     cmd=$(jq -r '.tool_input.command // empty' <<<"$input")
     case "$cmd" in
-      *.stickshift/.hook*)
+      *.stickshift[/\\].hook*)
         # Plain one-line reads are fine (Codex reads files through the shell); anything else could write there.
         case "$cmd" in *$'\n'*) deny "$HOOK_MSG" ;; esac
         grep -Eq '^[[:space:]]*(cat|head|tail|grep|wc|ls)[[:space:]][^;&|<>`$()]*$' <<<"$cmd" || deny "$HOOK_MSG"
