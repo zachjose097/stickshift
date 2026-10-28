@@ -96,6 +96,36 @@ You need:
    without that approval your notes aren't excluded from git; the AI will tell you if so. You can
    also add the line `.stickshift/` to `.git/info/exclude` yourself.
 
+### Claude Code in VS Code
+
+If you only use the Claude Code extension in VS Code and have no terminal command, install the
+plugin through your settings file instead.
+
+1. **Open your user settings file.** It is `~/.claude/settings.json` (on Windows,
+   `%USERPROFILE%\.claude\settings.json`). Claude Code creates the `.claude` folder the first
+   time you use it. If `settings.json` isn't there, create it.
+
+2. **Add the marketplace and the plugin.** Merge these two keys into the file, keeping any
+   settings already in it:
+
+   ```json
+   {
+     "extraKnownMarketplaces": {
+       "stickshift": {
+         "source": { "source": "github", "repo": "zachjose097/stickshift" }
+       }
+     },
+     "enabledPlugins": {
+       "stickshift@stickshift": true
+     }
+   }
+   ```
+
+3. **Reload the VS Code window**, open Claude Code and type `/stickshift:start`.
+
+On Windows, install `jq` with
+`winget install jqlang.jq`.
+
 ### Updating and removing
 
 | | Claude Code | Codex |
