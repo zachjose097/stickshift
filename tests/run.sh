@@ -260,5 +260,14 @@ done
   bad "session start without jq doesn't explain"
 rm -rf "$nojq"
 
+# jq from winget ends its output with a Windows line ending; the lock must still hold.
+crlf=$(mktemp -d)
+printf '#!/bin/bash\n%s "$@" | sed "s/$/\\r/"\n' "$(command -v jq)" > "$crlf/jq"
+chmod +x "$crlf/jq"
+out=$(jq -n --arg c "$proj" '{tool_name: "Edit", tool_input: {file_path: "src/a.py"}, cwd: $c}' |
+  PATH="$crlf:$PATH" bash "$hooks/guard.sh")
+grep -q '"deny"' <<<"$out" && ok || bad "guard allows an edit when jq ends its output with CRLF"
+rm -rf "$crlf"
+
 echo "$pass passed, $fail failed"
 [ "$fail" = 0 ]
